@@ -7,9 +7,24 @@
 #include <stack>
 #include <ctime>
 #include <map>
+#include <exception>
 
+#define RED     "\033[31m"
+#define RESET   "\033[0m"
 
 using namespace std;
+
+class MyException2 : public exception{
+    private:
+    string message= "Error: ";
+    public:
+    MyException2(const string& message=""){
+        this->message= string(RED)+ message + RESET;
+    }
+    const char *what(){
+        return (this->message).c_str();
+    }
+};
 
 // class Trybe; // Forward declaration
 class Executioner;
@@ -37,6 +52,7 @@ class Amulet: public Item{
             cout<<"Amulet does smth!";
         }
 };
+
 class Totem: public Item{
 
     public:
@@ -100,7 +116,6 @@ public:
         return items.size();
     }
     
- 
     void printAll() const {
         cout << "Repository: " << repositoryName << " (" << items.size() << " items)" << endl;
         int i=0;
@@ -339,7 +354,7 @@ public:
     void setMemberLevel() {
         auto& members = getMembers();
         if (members.empty()) {
-            cout << "The trybe has no members." << endl;
+            throw MyException2("Empty trybe");
             return;
         }
         
@@ -353,7 +368,9 @@ public:
         cin >> memberIndex;
         
         if (memberIndex < 1 || memberIndex > members.size()) {
-            cout << "Invalid member selection." << endl;
+            
+            throw MyException2("Invalid number selection: "+ to_string(memberIndex)
+            + " Please select an actual member!");
             return;
         }
         
@@ -434,7 +451,10 @@ public:
         }
         cout<<endl;
         int idx = rand() % members.size();
-        cout << "Executioner - "<<this->getName()<<" randomly executed member of type: " 
+        if(dynamic_pointer_cast<Leader>(members[idx])!= nullptr)
+            throw MyException2("Executioner can't delete the Leader, abort kill!");
+        else{
+            cout << "Executioner - "<<this->getName()<<" randomly executed member of type: " 
              << typeid(*members[idx]).name()<<"-"<<members[idx]->getName()
              << " (level " << members[idx]->getLevel() << ")\n";
         Member::recordKill(name);
@@ -450,6 +470,8 @@ public:
         cout<<"These are the members remaining: "<<endl;
         for (auto& w : members) {
         cout << typeid(*w).name() <<" "<<w->getName()<< endl;
+        }
+        
     }
     }
 };
@@ -516,7 +538,7 @@ public:
     void init() {
         shared_ptr<Trybe> latest = getLastTrybe();
         if (!latest) {
-            cout << "No trybes in the world.\n";
+            throw MyException2("No trybes left!");
             return;
         }
 
@@ -868,7 +890,11 @@ void displayMenu() {
         
         switch (choice) {
             case 1:
-                world.init();
+                try{
+                    world.init();
+                }catch ( MyException2 &e){
+                    cout<<e.what()<<endl;
+                };
                 break;
                 
             case 2:
@@ -884,7 +910,11 @@ void displayMenu() {
                 break;
                 
             case 5:
-                world.setMemberLevel();
+                try {
+                    world.setMemberLevel();
+                } catch ( MyException2 &e){
+                    cout<<e.what()<<endl;
+                };
                 break;
                 
             case 6:
@@ -919,15 +949,15 @@ int main() {
     TrybeWorld::getInstance().addTrybe(t1);
     TrybeWorld::getInstance().addTrybe(t2);
 
-    shared_ptr<Member> m4 = static_pointer_cast<Member>(make_shared<Executioner>("Alex", 30));
-    shared_ptr<Member> m5 = static_pointer_cast<Member>(make_shared<Executioner>("Gaby", 28));
-    shared_ptr<Member> leader = static_pointer_cast<Member>(make_shared<Leader>("Stefan", 20));
-    shared_ptr<Member> healer = static_pointer_cast<Member>(make_shared<Healer>("Teodora", 20));
+    shared_ptr<Member> m4 = make_shared<Executioner>("Alex", 30);
+    shared_ptr<Member> m5 = make_shared<Executioner>("Gaby", 28);
+    shared_ptr<Member> leader = make_shared<Leader>("Stefan", 20);
+    shared_ptr<Member> healer = make_shared<Healer>("Teodora", 20);
 
-    shared_ptr<Member> m1 = static_pointer_cast<Member>(make_shared<Executioner>("Andrei", 30));
-    shared_ptr<Member> m2 = static_pointer_cast<Member>(make_shared<Healer>("Mirela", 28));
-    shared_ptr<Member> leader1 = static_pointer_cast<Member>(make_shared<Leader>("Ion", 20));
-    shared_ptr<Member> healer1 = static_pointer_cast<Member>(make_shared<Healer>("Alexandra", 20));
+    shared_ptr<Member> m1 = make_shared<Executioner>("Andrei", 30);
+    shared_ptr<Member> m2 = make_shared<Healer>("Mirela", 28);
+    shared_ptr<Member> leader1 = make_shared<Leader>("Ion", 20);
+    shared_ptr<Member> healer1 = make_shared<Healer>("Alexandra", 20);
 
     m4->setLevel(10);
     m5->setLevel(15);
